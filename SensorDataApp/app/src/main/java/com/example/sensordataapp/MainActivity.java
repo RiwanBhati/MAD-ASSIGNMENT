@@ -36,7 +36,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             proximitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY);
         }
 
-        // 3. Warn the user if a sensor is missing (common on basic emulators)
+        // 3. Warn the user if a sensor is missing
         if (accelerometer == null) tvAccelerometer.setText("Accelerometer not available");
         if (lightSensor == null) tvLight.setText("Light sensor not available");
         if (proximitySensor == null) tvProximity.setText("Proximity sensor not available");
