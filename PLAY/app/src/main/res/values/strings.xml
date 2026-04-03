@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">PLAY</string>
+
+    <string name="audio_title">Audio Player (Local)</string>
+    <string name="open_audio">Open Audio File</string>
+    <string name="no_file">No file selected</string>
+
+    <string name="video_title">Video Player (Stream)</string>
+    <string name="video_hint">Enter Video URL</string>
+    <string name="load_url">Load URL</string>
+
+    <string name="play">Play</string>
+    <string name="pause">Pause</string>
+    <string name="stop">Stop</string>
+    <string name="restart">Restart</string>
+</resources>
