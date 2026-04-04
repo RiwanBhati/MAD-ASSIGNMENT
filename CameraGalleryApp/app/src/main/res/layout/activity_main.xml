@@ -3,32 +3,44 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
+    android:paddingTop="48dp"
     android:paddingStart="16dp"
     android:paddingEnd="16dp"
-    android:paddingBottom="16dp"
-    android:paddingTop="64dp"> <LinearLayout
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    android:weightSum="2"
-    android:layout_marginBottom="16dp">
+    android:background="#F5F5F5">
 
-    <Button
-        android:id="@+id/btnTakePhoto"
-        android:layout_width="0dp"
+    <TextView
+        android:id="@+id/tvCurrentFolder"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:text="@string/take_photo"
-        android:layout_marginEnd="8dp"/>
+        android:text="Current Folder: DefaultGallery"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="#333333"
+        android:layout_marginBottom="16dp"/>
 
-    <Button
-        android:id="@+id/btnChooseFolder"
-        android:layout_width="0dp"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:text="@string/choose_folder"
-        android:layout_marginStart="8dp"/>
-</LinearLayout>
+        android:orientation="horizontal"
+        android:weightSum="2"
+        android:layout_marginBottom="16dp">
+
+        <Button
+            android:id="@+id/btnTakePhoto"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/take_photo"
+            android:layout_marginEnd="8dp"/>
+
+        <Button
+            android:id="@+id/btnChooseFolder"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/choose_folder"
+            android:layout_marginStart="8dp"/>
+    </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerViewGallery"
@@ -36,5 +48,4 @@
         android:layout_height="match_parent"
         android:clipToPadding="false"
         android:paddingBottom="16dp" />
-
 </LinearLayout>

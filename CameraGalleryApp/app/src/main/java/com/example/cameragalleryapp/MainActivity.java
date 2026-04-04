@@ -6,6 +6,8 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -27,29 +29,26 @@ import java.util.Locale;
 public class MainActivity extends AppCompatActivity {
 
     Button btnTakePhoto, btnChooseFolder;
+    TextView tvCurrentFolder;
     RecyclerView recyclerViewGallery;
 
     ImageAdapter imageAdapter;
     List<File> imageList;
+
+    // Default folder name when app starts
+    String currentFolderName = "DefaultGallery";
     File currentPhotoFile;
     Uri currentPhotoUri;
 
-    // 1. Ask for Camera Permission safely
     ActivityResultLauncher<String> requestCameraPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
-                if (isGranted) {
-                    dispatchTakePictureIntent();
-                } else {
-                    Toast.makeText(this, "Camera permission is required to take photos", Toast.LENGTH_SHORT).show();
-                }
+                if (isGranted) dispatchTakePictureIntent();
+                else Toast.makeText(this, "Camera permission required", Toast.LENGTH_SHORT).show();
             });
 
-    // 2. Launch Camera and wait for the result
     ActivityResultLauncher<Uri> takePictureLauncher =
             registerForActivityResult(new ActivityResultContracts.TakePicture(), success -> {
-                if (success) {
-                    loadImagesFromFolder(); // Refresh the grid to show the new photo
-                }
+                if (success) loadImagesFromFolder();
             });
 
     @Override
@@ -59,19 +58,16 @@ public class MainActivity extends AppCompatActivity {
 
         btnTakePhoto = findViewById(R.id.btnTakePhoto);
         btnChooseFolder = findViewById(R.id.btnChooseFolder);
+        tvCurrentFolder = findViewById(R.id.tvCurrentFolder);
         recyclerViewGallery = findViewById(R.id.recyclerViewGallery);
 
-        // Set up the Grid to show 3 pictures per row
         recyclerViewGallery.setLayoutManager(new GridLayoutManager(this, 3));
         imageList = new ArrayList<>();
-
-        // Set up our Adapter and define what happens on a Long Click (Delete)
-        imageAdapter = new ImageAdapter(imageList, (imageFile, position) -> {
-            showDeleteDialog(imageFile, position);
-        });
+        imageAdapter = new ImageAdapter(imageList);
         recyclerViewGallery.setAdapter(imageAdapter);
 
-        // Take Photo Button Logic
+        updateFolderDisplay();
+
         btnTakePhoto.setOnClickListener(v -> {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
                 dispatchTakePictureIntent();
@@ -80,41 +76,67 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // Folder Button Logic (Loads all saved photos from this app's folder)
-        btnChooseFolder.setOnClickListener(v -> loadImagesFromFolder());
-
-        // Automatically load existing images when the app opens
-        loadImagesFromFolder();
+        // Requirement B: Choose a folder
+        btnChooseFolder.setOnClickListener(v -> showFolderChooserDialog());
     }
 
-    // Creates a secure file and opens the camera
+    @Override
+    protected void onResume() {
+        super.onResume();
+        loadImagesFromFolder(); // Refresh grid when returning from details screen
+    }
+
+    private void showFolderChooserDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Choose or Create Folder");
+        builder.setMessage("Enter the name of the folder you want to view or save photos to:");
+
+        final EditText input = new EditText(this);
+        input.setText(currentFolderName);
+        builder.setView(input);
+
+        builder.setPositiveButton("Set Folder", (dialog, which) -> {
+            String newFolderName = input.getText().toString().trim();
+            if (!newFolderName.isEmpty()) {
+                currentFolderName = newFolderName;
+                updateFolderDisplay();
+                loadImagesFromFolder();
+            }
+        });
+        builder.setNegativeButton("Cancel", null);
+        builder.show();
+    }
+
+    private void updateFolderDisplay() {
+        tvCurrentFolder.setText("Current Folder: " + currentFolderName);
+    }
+
+    // Requirement A: Save to chosen folder
     private void dispatchTakePictureIntent() {
         try {
-            // Create a unique file name using the current date and time
+            File storageDir = new File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), currentFolderName);
+            if (!storageDir.exists()) storageDir.mkdirs();
+
             String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
-            String imageFileName = "JPEG_" + timeStamp + "_";
-            File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+            String imageFileName = "IMG_" + timeStamp + ".jpg";
 
-            currentPhotoFile = File.createTempFile(imageFileName, ".jpg", storageDir);
+            currentPhotoFile = new File(storageDir, imageFileName);
 
-            // Get a secure URI using the FileProvider we defined in the Manifest
             currentPhotoUri = FileProvider.getUriForFile(this,
                     getApplicationContext().getPackageName() + ".provider",
                     currentPhotoFile);
 
             takePictureLauncher.launch(currentPhotoUri);
-
         } catch (Exception e) {
-            Toast.makeText(this, "Error setting up the camera", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Error setting up camera", Toast.LENGTH_SHORT).show();
         }
     }
 
-    // Scans our folder and pushes the images into the grid
     private void loadImagesFromFolder() {
         imageList.clear();
-        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        File storageDir = new File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), currentFolderName);
 
-        if (storageDir != null && storageDir.exists()) {
+        if (storageDir.exists()) {
             File[] files = storageDir.listFiles();
             if (files != null) {
                 for (File file : files) {
@@ -124,26 +146,6 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         }
-
         imageAdapter.notifyDataSetChanged();
-        if (imageList.isEmpty()) {
-            Toast.makeText(this, "No photos in gallery yet!", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    // Shows a confirmation pop-up before deleting
-    private void showDeleteDialog(File imageFile, int position) {
-        new AlertDialog.Builder(this)
-                .setTitle(R.string.confirm_delete_title)
-                .setMessage(R.string.confirm_delete_message)
-                .setPositiveButton(R.string.yes, (dialog, which) -> {
-                    if (imageFile.delete()) {
-                        imageList.remove(position);
-                        imageAdapter.notifyItemRemoved(position);
-                        Toast.makeText(this, "Image Deleted", Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .setNegativeButton(R.string.no, null)
-                .show();
     }
 }
